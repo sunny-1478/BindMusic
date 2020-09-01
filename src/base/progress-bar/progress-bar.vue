@@ -1,8 +1,13 @@
 <template>
-  <div class="progress-bar">
+  <div class="progress-bar" ref="progressBar" @click="progressClick">
     <div class="bar-inner">
-      <div class="progress"></div>
-      <div class="progress-btn-wrapper">
+      <div class="progress" ref="progress"></div>
+      <!-- 给进度条按钮添加滑动事件(.prevent阻止浏览器默认行为) -->
+      <div class="progress-btn-wrapper" ref="progressBtn"
+        @touchstart.prevent="progressTouchStart"
+                @touchmove.prevent="progressTouchMove"
+                @touchend="progressTouchEnd"
+      >
         <div class="progress-btn"></div>
       </div>
     </div>
@@ -10,6 +15,13 @@
 </template>
 
 <script type="text/ecmascript-6">
+// 引入prefixStyle
+import {prefixStyle} from 'common/js/dom'
+// 使用prefixStyle中的transform
+  const transform = prefixStyle('transform')
+
+  // 定义按钮宽度为16 由样式决定
+  const progressBtnWidth=16
 export default {
   props:{
     // 给进度条一个百分比属性
@@ -18,10 +30,71 @@ export default {
       default:0
     }
   },
+  // 创建touch实例对象
+  created(){
+    // 用于不同的回调函数里边需要去共享一些数据的时候，需要把共享数据挂载到touch的空对象中
+    this.touch={}
+  },
+  methods:{
+    //从参数e中拿到touch的信息
+    progressTouchStart(e){
+      // touch初始化
+      this.touch.initiated=true
+      // 记录touch点击的位置 touches[0].pageX表示我们第一次移动小球时的位置
+      this.touch.startX=e.touches[0].pageX
+      // 记录当前按钮的偏移位置：滚动进度条的宽度
+      this.touch.left=this.$refs.progress.clientWidth
+    },
+    progressTouchMove(e){
+      // 如果没有经过progressTouchStart直接return
+      if(!this.touch.initiated){
+        return
+      }
+      // 手指移动的偏移量
+      const deltaX=e.touches[0].pageX-this.touch.startX
+      // 小球移动后的位置 移动量不能小于0，不能超过进度条宽度
+      const offsetWidth=Math.min(this.$refs.progressBar.clientWidth-progressBtnWidth,Math.max(0,this.touch.left+deltaX))
+      this._offset(offsetWidth)
+      
+    },
+    progressTouchEnd(){
+      this.touch.initiated=false
+      this._triggerPercent();
+    },
+    // 拖动完成 派发percent改变事件
+    _triggerPercent(){
+      const barWidth=this.$refs.progressBar.clientWidth-progressBtnWidth
+      const percent=this.$refs.progress.clientWidth/barWidth
+      this.$emit('percentChange',percent)
+    },
+    _offset(offsetWidth){
+      this.$refs.progress.style.width=`${offsetWidth}px`
+      //进度条小球偏移量
+      this.$refs.progressBtn.style[transform]=`translate3d(${offsetWidth}px,0,0)` 
+    },
+    // 点击滚动条时  改变当前歌曲播放进度
+    progressClick(e){
+      const rect = this.$refs.progressBar.getBoundingClientRect()
+      const offsetWidth = e.pageX - rect.left
+      this._offset(offsetWidth)
+      
+      this._triggerPercent()
+    }
+  },
+
 watch:{
   // 监听进度条百分比变化
-  percent(){
-
+  percent(newPercent){
+    // !this.touch.initiated防止与移动事件造成冲突
+    if(newPercent>0 && !this.touch.initiated){
+      // 进度条宽度
+      const barWidth=this.$refs.progressBar.clientWidth-progressBtnWidth
+      // console.log(barWidth)
+      // 偏移宽度 歌曲播放比例
+      const offsetWidth=newPercent*barWidth
+      // console.log(offsetWidth)
+      this._offset(offsetWidth)
+    }
   }
 }
 }
@@ -29,250 +102,32 @@ watch:{
 
 <style scoped lang="stylus" rel="stylesheet/stylus">
   @import "~common/stylus/variable"
-  @import "~common/stylus/mixin"
 
-  .player
-    .normal-player
-      position: fixed
-      left: 0
-      right: 0
-      top: 0
-      bottom: 0
-      z-index: 150
-      background: $color-background
-      .background
+  .progress-bar
+    height: 30px
+    .bar-inner
+      position: relative
+      top: 13px
+      height: 4px
+      background: rgba(0, 0, 0, 0.3)
+      .progress
         position: absolute
-        left: 0
-        top: 0
-        width: 100%
         height: 100%
-        z-index: -1
-        opacity: 0.6
-        filter: blur(20px)
-      .top
-        position: relative
-        margin-bottom: 25px
-        .back
-          position absolute
-          top: 0
-          left: 6px
-          z-index: 50
-          .icon-back
-            display: block
-            padding: 9px
-            font-size: $font-size-large-x
-            color: $color-theme
-            transform: rotate(-90deg)
-        .title
-          width: 70%
-          margin: 0 auto
-          line-height: 40px
-          text-align: center
-          no-wrap()
-          font-size: $font-size-large
-          color: $color-text
-        .subtitle
-          line-height: 20px
-          text-align: center
-          font-size: $font-size-medium
-          color: $color-text
-      .middle
-        position: fixed
-        width: 100%
-        top: 80px
-        bottom: 170px
-        white-space: nowrap
-        font-size: 0
-        .middle-l
-          display: inline-block
-          vertical-align: top
-          position: relative
-          width: 100%
-          height: 0
-          padding-top: 80%
-          .cd-wrapper
-            position: absolute
-            left: 10%
-            top: 0
-            width: 80%
-            box-sizing: border-box
-            height: 100%
-            .cd
-              width: 100%
-              height: 100%
-              border-radius: 50%
-              .image
-                position: absolute
-                left: 0
-                top: 0
-                width: 100%
-                height: 100%
-                box-sizing: border-box
-                border-radius: 50%
-                border: 10px solid rgba(255, 255, 255, 0.1)
-              .play
-                animation: rotate 20s linear infinite
-          .playing-lyric-wrapper
-            width: 80%
-            margin: 30px auto 0 auto
-            overflow: hidden
-            text-align: center
-            .playing-lyric
-              height: 20px
-              line-height: 20px
-              font-size: $font-size-medium
-              color: $color-text-l
-        .middle-r
-          display: inline-block
-          vertical-align: top
-          width: 100%
-          height: 100%
-          overflow: hidden
-          .lyric-wrapper
-            width: 80%
-            margin: 0 auto
-            overflow: hidden
-            text-align: center
-            .text
-              line-height: 32px
-              color: $color-text-l
-              font-size: $font-size-medium
-              &.current
-                color: $color-text
-            .pure-music
-              padding-top: 50%
-              line-height: 32px
-              color: $color-text-l
-              font-size: $font-size-medium
-      .bottom
+        background: $color-theme
+      .progress-btn-wrapper
         position: absolute
-        bottom: 50px
-        width: 100%
-        .dot-wrapper
-          text-align: center
-          font-size: 0
-          .dot
-            display: inline-block
-            vertical-align: middle
-            margin: 0 4px
-            width: 8px
-            height: 8px
-            border-radius: 50%
-            background: $color-text-l
-            &.active
-              width: 20px
-              border-radius: 5px
-              background: $color-text-ll
-        .progress-wrapper
-          display: flex
-          align-items: center
-          width: 80%
-          margin: 0px auto
-          padding: 10px 0
-          .time
-            color: $color-text
-            font-size: $font-size-small
-            flex: 0 0 30px
-            line-height: 30px
-            width: 30px
-            &.time-l
-              text-align: left
-            &.time-r
-              text-align: right
-          .progress-bar-wrapper
-            flex: 1
-        .operators
-          display: flex
-          align-items: center
-          .icon
-            flex: 1
-            color: $color-theme
-            &.disable
-              color: $color-theme-d
-            i
-              font-size: 30px
-          .i-left
-            text-align: right
-          .i-center
-            padding: 0 20px
-            text-align: center
-            i
-              font-size: 40px
-          .i-right
-            text-align: left
-          .icon-favorite
-            color: $color-sub-theme
-      &.normal-enter-active, &.normal-leave-active
-        transition: all 0.4s
-        .top, .bottom
-          transition: all 0.4s cubic-bezier(0.86, 0.18, 0.82, 1.32)
-      &.normal-enter, &.normal-leave-to
-        opacity: 0
-        .top
-          transform: translate3d(0, -100px, 0)
-        .bottom
-          transform: translate3d(0, 100px, 0)
-    .mini-player
-      display: flex
-      align-items: center
-      position: fixed
-      left: 0
-      bottom: 0
-      z-index: 180
-      width: 100%
-      height: 60px
-      background: $color-highlight-background
-      &.mini-enter-active, &.mini-leave-active
-        transition: all 0.4s
-      &.mini-enter, &.mini-leave-to
-        opacity: 0
-      .icon
-        flex: 0 0 40px
-        width: 40px
-        height: 40px
-        padding: 0 10px 0 20px
-        .imgWrapper
-          height: 100%
-          width: 100%
-          img
-            border-radius: 50%
-            &.play
-              animation: rotate 10s linear infinite
-            &.pause
-              animation-play-state: paused
-      .text
-        display: flex
-        flex-direction: column
-        justify-content: center
-        flex: 1
-        line-height: 20px
-        overflow: hidden
-        .name
-          margin-bottom: 2px
-          no-wrap()
-          font-size: $font-size-medium
-          color: $color-text
-        .desc
-          no-wrap()
-          font-size: $font-size-small
-          color: $color-text-d
-      .control
-        flex: 0 0 30px
+        left: -8px
+        top: -13px
         width: 30px
-        padding: 0 10px
-        .icon-play-mini, .icon-pause-mini, .icon-playlist
-          font-size: 30px
-          color: $color-theme-d
-        .icon-mini
-          font-size: 32px
-          position: absolute
-          left: 0
-          top: 0
-
-  @keyframes rotate
-    0%
-      transform: rotate(0)
-    100%
-      transform: rotate(360deg)
+        height: 30px
+        .progress-btn
+          position: relative
+          top: 7px
+          left: 7px
+          box-sizing: border-box
+          width: 16px
+          height: 16px
+          border: 3px solid $color-text
+          border-radius: 50%
+          background: $color-theme
 </style>
-

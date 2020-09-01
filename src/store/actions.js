@@ -31,7 +31,7 @@ export const selectPlay = function ({ commit, state }, { list, index }) {
   commit(types.SET_FULL_SCREEN, true);
   commit(types.SET_PLAYING_STATE, true);
 };
-
+// 随机播放
 export const randomPlay = function ({ commit }, { list }) {
   commit(types.SET_PLAY_MODE, playMode.random);
   commit(types.SET_SEQUENCE_LIST, list);

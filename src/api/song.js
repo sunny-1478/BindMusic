@@ -13,9 +13,10 @@ export function getLyric(mid) {
     platform: 'yqq',
     hostUin: 0,
     needNewCode: 0,
-    categoryId: 10000000,
+    // categoryId: 10000000,
     pcachetime: +new Date(),
-    format: 'json'
+    format: 'json',
+    g_tk:67232376
   })
 
   return axios.get(url, {
