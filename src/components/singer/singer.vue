@@ -12,10 +12,13 @@ import Singer from "../../common/js/singer";
 import ListView from "../../base/listview/listview";
 // vue语法糖mapMutations
 import {mapMutations} from 'vuex'
+// import {playlistMixin} from 'common/js/mixin'
+
 // 定义一个热门数据常量
 const HOT_NAME = "热门";
 const HOT_NAME_LEN = 10;
 export default {
+  // mixins: [playlistMixin],
   data() {
     return {
       singers: [],

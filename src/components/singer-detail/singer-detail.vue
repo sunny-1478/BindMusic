@@ -9,10 +9,10 @@
   // import MusicList from 'components/music-list/music-list'
   import { getSingerDetail } from 'api/singer'
   import { ERR_OK } from 'api/config'
-  import { createSong} from 'common/js/song'
+  import { createSong,processSongsUrl } from 'common/js/song'
   import { mapGetters } from 'vuex'
   // 引入music-list组件
-  import MusicList from '../music-list/music-list'
+  import MusicList from 'components/music-list/music-list'
 
   export default {
     data(){
@@ -46,9 +46,9 @@
         // 通过this.singer.id传入singe.id 获取歌曲信息
        getSingerDetail(this.singer.id).then((res)=>{
          if(res.code==ERR_OK){
-          //  console.log(res.data.list)
-          this.songs=this._normalizeSongs(res.data.list)
-          // console.log(this.songs)
+           processSongsUrl(this._normalizeSongs(res.data.list)).then((songs) => {
+              this.songs = songs
+            })
          }
        })
       },

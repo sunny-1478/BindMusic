@@ -332,6 +332,12 @@ export default {
     ready() {
       this.songReady = true;
     },
+    paused() {
+        this.setPlayingState(false)
+        if (this.currentLyric) {
+          this.currentLyric.stop()
+        }
+      },
     // 当歌曲加载失败 出发error
     error() {
       this.songReady = true;
@@ -346,13 +352,14 @@ export default {
       const mode=(this.mode+1)%3;
       this.setPlayMode(mode)
       let list=null
-      if(mode==playMode.random){
+      if(mode===playMode.random){
         list=shuffle(this.sequenceList)
       }else{
         list=this.sequenceList
       }
       this.resetCurrentIndex(list)
       this.setPlayList(list)
+      // console.log(currentSong)
     },
     // 切换播放模式当前播放歌曲不发生改变
     resetCurrentIndex(list){
@@ -376,7 +383,6 @@ export default {
         if(this.playing){
           this.currentLyric.play()
         }
-        // console.log(this.currentLyric);
       })
     },
     // 当歌曲每一行发生改变时 触发回调函数 歌词高亮显示
@@ -528,21 +534,21 @@ export default {
       });
     },
     playing(newPlaying) {
-      if (!this.songReady) {
-        return;
-      }
-      const audio = this.$refs.audio;
-      this.$nextTick(() => {
-        newPlaying ? audio.play() : audio.pause();
-      });
-      if (!newPlaying) {
-        if (this.fullScreen) {
-          this.syncWrapperTransform("imageWrapper", "image");
-        } else {
-          this.syncWrapperTransform("miniWrapper", "miniImage");
+        if (!this.songReady) {
+          return
         }
-      }
-    },
+        const audio = this.$refs.audio
+        this.$nextTick(() => {
+          newPlaying ? audio.play() : audio.pause()
+        })
+        if (!newPlaying) {
+          if (this.fullScreen) {
+            this.syncWrapperTransform('imageWrapper', 'image')
+          } else {
+            this.syncWrapperTransform('miniWrapper', 'miniImage')
+          }
+        }
+      },
   },
   // 注册组件
   components: {
